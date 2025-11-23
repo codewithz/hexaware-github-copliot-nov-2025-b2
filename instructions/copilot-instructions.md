@@ -1,58 +1,156 @@
 # GitHub Copilot Instructions for Spring Boot Java Coding
 
 ## 🧭 Purpose
-This document provides instructions for GitHub Copilot to follow consistent coding standards when generating Java code for Spring Boot applications. These guidelines ensure the code is readable, maintainable, and follows common Spring development practices.
+This document provides instructions for GitHub Copilot to follow consistent coding standards when generating Java code for Spring Boot applications. These guidelines ensure the code is **readable, maintainable, and aligned with standard Spring practices**.
 
 ---
 
 ## ⚙️ General Guidelines
 
-1. Use 4 spaces per indentation level.
-2. Follow proper Java naming conventions and structure.
-3. Include Javadoc-style comments for public classes and methods.
-4. Avoid unused imports and redundant code.
-5. Keep class files focused — one public class per file.
+1. Use **4 spaces** per indentation level.  
+2. Follow proper **Java naming conventions**.  
+3. Include **Javadoc-style comments** for all public classes and methods.  
+4. Remove unused imports and redundant code.  
+5. Keep classes **single-responsibility** — one public class per file.  
 
 ---
 
 ## 🧪 Structure and Layering
 
 1. Follow standard Spring Boot layer separation:
-   - `controller` for REST APIs
-   - `controller` should be prefixed as /api/hexaware/prod 
-   - `service` for business logic
-   - `repository` for database access
-   - `model` or `entity` for data classes
-2. Use dependency injection with `@Autowired` or constructor injection.
-3. Avoid placing business logic in the controller layer.
+    - `controller` → REST APIs  
+    - `service` → Business logic  
+    - `repository` → Data access (even if simulated without a DB)  
+    - `model` or `entity` → Data classes  
+2. Use **constructor injection** for dependency management.  
+3. **Avoid business logic in controllers** — delegate it to services.  
+4. All controllers must use base path prefix:  
+   ```
+   /api/hexaware/production
+   ```
+
+   Example:  
+   ```java
+   @RestController
+   @RequestMapping("/api/hexaware/production/customers")
+   ```
+
+---
+
+## 🧱 Entity Guidelines (Non-JPA)
+
+When creating an entity or model class:
+
+1. **Do not use JPA annotations** such as `@Entity`, `@Table`, `@Id`, etc.  
+2. Each entity must include:
+   - Private fields with clear names and types.
+   - **Default (no-args) constructor**.
+   - **Parameterized constructor** with all fields.
+   - **Getters and setters** for all fields.
+   - **Overridden** methods:
+     - `toString()` – return key field details.
+     - `equals()` and `hashCode()` – compare based on unique fields (e.g., ID or name).  
+
+**Example:**
+
+```java
+package com.hexaware.model;
+
+import java.time.LocalDate;
+import java.util.Objects;
+
+/**
+ * Represents a Customer in the system.
+ */
+public class Customer {
+    private long id;
+    private String name;
+    private String email;
+    private LocalDate dateOfBirth;
+    private String accountType;
+    private LocalDate dateOfJoin;
+
+    public Customer() {}
+
+    public Customer(long id, String name, String email, LocalDate dateOfBirth,
+                    String accountType, LocalDate dateOfJoin) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+        this.dateOfBirth = dateOfBirth;
+        this.accountType = accountType;
+        this.dateOfJoin = dateOfJoin;
+    }
+
+    public long getId() { return id; }
+    public void setId(long id) { this.id = id; }
+
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+
+    public LocalDate getDateOfBirth() { return dateOfBirth; }
+    public void setDateOfBirth(LocalDate dateOfBirth) { this.dateOfBirth = dateOfBirth; }
+
+    public String getAccountType() { return accountType; }
+    public void setAccountType(String accountType) { this.accountType = accountType; }
+
+    public LocalDate getDateOfJoin() { return dateOfJoin; }
+    public void setDateOfJoin(LocalDate dateOfJoin) { this.dateOfJoin = dateOfJoin; }
+
+    @Override
+    public String toString() {
+        return "Customer{id=" + id + ", name='" + name + "', email='" + email + "'}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Customer)) return false;
+        Customer that = (Customer) o;
+        return id == that.id && Objects.equals(email, that.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, email);
+    }
+}
+```
 
 ---
 
 ## 🔤 Naming Conventions
 
-- Use **camelCase** for variables and methods.
-- Use **PascalCase** for class names.
-- Prefix interfaces with meaningful names (e.g., `UserService`, `ProductRepository`).
-- Suffix controller classes with `Controller`.
+- **camelCase** → variables and methods  
+- **PascalCase** → class names  
+- **UPPER_SNAKE_CASE** → constants  
+- Suffix controllers with `Controller`, e.g., `CustomerController`  
+- Prefix interfaces meaningfully, e.g., `UserService`, `ProductRepository`
 
 ---
 
-## 📦 Import Statements
+## 🌐 REST API Guidelines
 
-- Always place imports at the top of the file.
-- Organize them as:
-  1. `java.*`, `javax.*` imports
-  2. Third-party libraries (e.g., Spring Framework, Lombok)
-  3. Internal project imports
-- Remove unused imports before committing.
+- Base URL:  
+  ```
+  /api/hexaware/production
+  ```
+- Use appropriate HTTP verbs:
+  - `GET` → Retrieve
+  - `POST` → Create
+  - `PUT` → Update
+  - `DELETE` → Remove  
+- Always return `ResponseEntity<?>`
+- Include clear and meaningful endpoint names.
 
----
-
-## 🌐 API Example Style (Injecting Copilot-Generated Code)
+**Example:**
 
 ```java
 @RestController
-@RequestMapping("/customers")
+@RequestMapping("/api/hexaware/production/customers")
 public class CustomerController {
 
     private final CustomerService customerService;
@@ -74,85 +172,51 @@ public class CustomerController {
 }
 ```
 
-✅ Follows best practices:
-- Uses constructor-based dependency injection  
-- Properly scoped endpoint and HTTP verb  
-- Uses `ResponseEntity` to manage HTTP response status  
-- Clearly named method and variable (`getAllCustomers`)  
-- Payload is directly used (`customers`), not a vague variable like `payload`  
-
 ---
 
 ## 🧹 Best Practices
 
-- Annotate REST APIs with `@RestController` and map endpoints using `@RequestMapping` or HTTP-specific annotations (`@GetMapping`, etc.).
-- Use DTOs to avoid exposing entities directly.
-- Handle exceptions using `@ControllerAdvice`.
-- Use `@Valid` and `@NotNull` for input validation.
+- Use `@RestController` for REST endpoints.  
+- Validate inputs using `@Valid` and `@NotNull`.  
+- Centralize error handling with `@ControllerAdvice`.  
+- Return appropriate HTTP codes (`200`, `400`, `404`, `500`).  
+- Log important events and errors using `Slf4j` or similar.  
+- Never expose sensitive data directly.  
 
 ---
 
-# 🧪 Test Structure & Best Practices
+## 🧪 Testing Standards
 
-## 📁 Test Structure & Naming
+### 📁 Test File Naming
+- Controller → `XxxControllerTest`
+- Service → `XxxServiceTest`
+- Repository → `XxxRepositoryTest`
 
-- **Location:**  
-  `src/test/java/...` mirroring main package structure.
+### 🧩 Test Methods
+Use **JUnit 5** and follow the pattern:
+```java
+shouldReturnCustomers_whenGetAll()
+shouldThrowNotFound_whenCustomerMissing()
+shouldRejectInvalidEmail_whenCreateCustomer()
+```
 
-- **Class Names:**  
-  - `XxxServiceTest`  
-  - `XxxControllerTest`  
-  - `XxxRepositoryTest`
+### ✅ Coverage
+- Controllers ≥ 80%  
+- Services ≥ 85%  
+- Repository ≥ 75% (if applicable)  
 
-- **Method Names (JUnit 5):**  
-  - `shouldReturnCustomers_whenGetAll()`  
-  - `shouldThrowNotFound_whenCustomerMissing()`  
-  - `shouldRejectInvalidEmail_whenCreateCustomer()`
-
----
-
-## ✅ What to Test per Layer
-
-### Controller (Web)
-- HTTP status codes, response bodies, headers.  
-- Validation failures (`@Valid`, constraint violations).  
-- Error handling via `@ControllerAdvice`.
-
-### Service (Business)
-- Branching logic, orchestration, transaction boundaries.  
-- Interaction with repositories and other services (mocked).  
-
-### Repository (Data)
-- Query methods and custom queries.  
-- Basic CRUD with realistic schema.  
-- Use lightweight DB (**H2**) or **Testcontainers** for realism.
+Use **AAA pattern**:  
+```java
+// Arrange
+// Act
+// Assert
+```
 
 ---
 
-## 🧱 Common Patterns
+## 🔒 Security Guidelines
 
-- **AAA:** Arrange → Act → Assert (one assertion group per behavior).  
-  > 💡 **Comment for Copilot:** Always use `//Arrange //Act //Assert` in test methods wherever applicable.  
-- **Test Doubles:** Mockito (`@Mock`, `@InjectMocks`), `when(...).thenReturn(...)`, `verify(...)`.  
-- **Parameterized Tests:** Boundary values, equivalence classes.  
-- **Data Builders:** Create reusable valid domain objects, tweak fields per test.
-
----
-
-## 🎛️ Coverage & Quality
-
-**Targets:**  
-- Line coverage ≥ **80%**  
-  - Services ≥ **85%**  
-  - Controllers ≥ **80%**  
-- Branch coverage for complex logic.  
-- No assertions on logs or private methods.  
-- Prefer **state & contract assertions** over interaction unless it’s orchestration.
-
----
-
-## 🔒 Security Considerations
-
-- Never hardcode passwords, tokens, or secrets.  
-- Externalize configuration using `application.properties` or `application.yml`.  
-- Use `@PreAuthorize` and `@Secured` where role-based access is required.  
+- Never hardcode credentials, tokens, or secrets.  
+- Externalize config using `application.properties` or `application.yml`.  
+- Use `@PreAuthorize` / `@Secured` for role-based access.  
+- Sanitize all user inputs and log sensitive info cautiously.  
